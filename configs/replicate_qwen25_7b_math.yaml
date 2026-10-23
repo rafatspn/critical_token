@@ -1,0 +1,16 @@
+dataset: MATH
+model: Qwen/Qwen2.5-7B
+out_dir: outputs/replicate_qwen25_7b_math
+n_samples_per_problem: 8
+n_wrong: 100
+n_right: 0
+wrong_per_problem: 2
+right_per_problem: 0
+mode: exhaustive
+n_with_rollouts: 64
+n_sampled_alternatives: 64
+n_alt_rollouts: 16
+gen_temperature: 0.5
+rollout_temperature: 0.5
+replacement_temperature: 1.0
+

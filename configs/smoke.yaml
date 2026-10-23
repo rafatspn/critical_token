@@ -1,0 +1,21 @@
+dataset: GSM8K_test
+model: Qwen/Qwen2.5-0.5B
+out_dir: outputs/smoke
+n_problems: 5
+n_samples_per_problem: 8
+min_correct: 0
+max_correct: 8
+n_wrong: 5
+n_right: 5
+wrong_per_problem: 2
+right_per_problem: 1
+mode: search
+grid_stride: 16
+n_with_rollouts: 4
+n_sampled_alternatives: 4
+n_alt_rollouts: 4
+n_strat: 4
+gen_temperature: 0.7
+rollout_temperature: 0.7
+max_tokens: 256
+
