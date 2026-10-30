@@ -6,20 +6,19 @@
 #
 # Job graph (each job runs scripts/label_traces.sh with one config):
 #   1. smoke test (debug queue, 30 min); it also builds the Python environment once.
-#   2. after the smoke test succeeds, in parallel:
+#   2. after the smoke test succeeds, one job array per run, in parallel:
 #        replicate_qwen25_7b_gsm8k, replicate_qwen25_7b_math, study_qwen25_7b_math500
-#   3. each run in step 2 gets $CTLABEL_RETRIES (default 3) retry jobs. A retry starts only
-#      if every earlier attempt of that run failed (e.g. hit the 48 h limit); stages resume
-#      from what is on disk (rollouts are saved after every batch), so a retry continues
-#      where the previous attempt stopped.
-#      Retries that are not needed are cancelled automatically by Slurm.
+#      Each array has $CTLABEL_MAX_ATTEMPTS (default 4) tasks of up to 48 h that run one at
+#      a time (%1). A task that reaches the wall-time limit stops cleanly and the next task
+#      resumes from disk (rollouts are saved after every batch). When the run finishes, or
+#      fails with a real error, its remaining tasks are cancelled.
 #
 # Logs: logs/<job-name>-<job-id>.out / .err in the repo.
 set -euo pipefail
 
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 JOB_SCRIPT="$REPO/scripts/label_traces.sh"
-RETRIES=${CTLABEL_RETRIES:-3}
+MAX_ATTEMPTS=${CTLABEL_MAX_ATTEMPTS:-4}
 RUNS=(replicate_qwen25_7b_gsm8k replicate_qwen25_7b_math study_qwen25_7b_math500)
 DRY_RUN=0
 if [ "${1:-}" = "--dry-run" ]; then
@@ -47,19 +46,11 @@ echo "smoke test: $smoke"
 
 all_ids=("$smoke")
 for run in "${RUNS[@]}"; do
-    attempts=$(submit "ctl-$run" --dependency="afterok:$smoke" --kill-on-invalid-dep=yes \
+    id=$(submit "ctl-$run" --array="1-$MAX_ATTEMPTS%1" \
+        --dependency="afterok:$smoke" --kill-on-invalid-dep=yes \
         "$JOB_SCRIPT" "configs/$run.yaml")
-    ids=("$attempts")
-    for ((retry = 1; retry <= RETRIES; retry++)); do
-        # afternotok on *all* earlier attempts: if any attempt succeeded the dependency can
-        # never be met and --kill-on-invalid-dep cancels this retry.
-        attempts=$(IFS=:; echo "${ids[*]}")
-        id=$(submit "ctl-$run-retry$retry" --dependency="afternotok:$attempts" --kill-on-invalid-dep=yes \
-            "$JOB_SCRIPT" "configs/$run.yaml")
-        ids+=("$id")
-    done
-    echo "$run: ${ids[*]}"
-    all_ids+=("${ids[@]}")
+    echo "$run: array $id (up to $MAX_ATTEMPTS x 48 h)"
+    all_ids+=("$id")
 done
 
 if [ "$DRY_RUN" = 0 ]; then

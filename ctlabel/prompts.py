@@ -1,5 +1,9 @@
 """Few-shot prompts copied verbatim from cDPO's ``configs/prompt.py``."""
 
+from __future__ import annotations
+
+from typing import Any
+
 GSM8K_PROMPT = """Question: There are 15 trees in the grove. Grove workers will plant trees in the grove today. After they are done, there will be 21 trees. How many trees did the grove workers plant today? 
 Answer: There are 15 trees originally. Then there were 21 trees after some more were planted. So there must have been 21 - 15 = 6. The answer is 6.
 
@@ -62,12 +66,48 @@ Final Answer: The final answer is $-\\frac{2}{3}$. I hope it is correct.
 STOP_STRINGS = ["\n\nQuestion:", ".\n\nQuestion:", "\n\nProblem:", ".\n\nProblem:"]
 
 
-def build_prompt(dataset: str, question: str) -> str:
-    """Build the exact cDPO startup prompt, without stripping whitespace."""
+def prompt_parts(dataset: str, question: str) -> tuple[str, str, str]:
+    """Split the cDPO startup prompt into (few-shot, question, answer cue) text."""
     base = dataset.removesuffix("_test").upper()
     if base == "MATH":
-        return MATH_PROMPT + "Problem:\n" + question + "\n\nSolution:\n"
+        return MATH_PROMPT, "Problem:\n" + question, "\n\nSolution:\n"
     if base == "GSM8K":
-        return GSM8K_PROMPT + "Question: " + question + "\nAnswer: "
+        return GSM8K_PROMPT, "Question: " + question, "\nAnswer: "
     raise ValueError(f"Unsupported dataset: {dataset}")
 
+
+def build_prompt(dataset: str, question: str) -> str:
+    """Build the exact cDPO startup prompt, without stripping whitespace."""
+    return "".join(prompt_parts(dataset, question))
+
+
+def prompt_spans(tokenizer: Any, dataset: str, question: str, prompt_ids: list[int]) -> dict[str, Any]:
+    """Token index ranges ``[start, end)`` of each prompt segment inside ``prompt_ids``.
+
+    Parts are tokenized separately; when their concatenation differs from
+    ``prompt_ids`` (a merge at a boundary), each boundary is located by
+    incremental decoding and a straddling token is assigned to the earlier part.
+    """
+    parts = prompt_parts(dataset, question)
+    pieces = [tokenizer.encode(part, add_special_tokens=False) for part in parts]
+    merged = [token for piece in pieces for token in piece] != list(prompt_ids)
+    if not merged:
+        ends = [sum(len(piece) for piece in pieces[: index + 1]) for index in range(len(pieces))]
+    else:
+        ends = []
+        for index in range(len(parts) - 1):
+            char_end = len("".join(parts[: index + 1]))
+            low, high = 0, len(prompt_ids)
+            while low < high:  # first k whose decoded prefix reaches the boundary
+                middle = (low + high) // 2
+                if len(tokenizer.decode(prompt_ids[:middle], skip_special_tokens=False)) >= char_end:
+                    high = middle
+                else:
+                    low = middle + 1
+            ends.append(low)
+        ends.append(len(prompt_ids))
+    starts = [0, *ends[:-1]]
+    names = ("fewshot_span", "question_span", "cue_span")
+    spans: dict[str, Any] = {name: [start, end] for name, start, end in zip(names, starts, ends)}
+    spans["prompt_spans_merged"] = merged
+    return spans

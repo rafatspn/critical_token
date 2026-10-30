@@ -84,7 +84,7 @@ def label_position(
 
 
 def assign_entropy_deciles(rows: list[dict[str, Any]]) -> None:
-    ordered = sorted(range(len(rows)), key=lambda index: (float(rows[index]["entropy"]), rows[index]["trace_id"], rows[index]["pos"]))
+    ordered = sorted(range(len(rows)), key=lambda index: (float(rows[index]["entropy_T1"]), rows[index]["trace_id"], rows[index]["pos"]))
     for rank, index in enumerate(ordered):
         rows[index]["entropy_decile"] = min(9, rank * 10 // max(1, len(rows)))
 
@@ -97,7 +97,12 @@ def finalize_position_labels(row: dict[str, Any], *, before_critical: bool, tau_
     return row
 
 
-def sample_negatives(positions: list[dict[str, Any]], traces: dict[str, dict[str, Any]], k: int, seed: int) -> list[dict[str, Any]]:
+def sample_negatives(positions: list[dict[str, Any]], k: int, seed: int) -> list[dict[str, Any]]:
+    """Draw matched negatives for every critical position.
+
+    Uses only ``positions.parquet`` columns (no rollouts), so later analysis can
+    redraw negatives with other matching rules.
+    """
     critical_kinds = ["is_crit_cdpo", "is_crit_drop", "is_fixable", "is_crit_good"]
     critical_keys = {(row["trace_id"], int(row["pos"])) for row in positions if any(row[kind] for kind in critical_kinds)}
     noncritical = [row for row in positions if row["is_noncritical"] and (row["trace_id"], int(row["pos"])) not in critical_keys]
@@ -112,11 +117,10 @@ def sample_negatives(positions: list[dict[str, Any]], traces: dict[str, dict[str
                 "same_type": [row for row in noncritical if row["model"] == critical["model"] and row["token_type"] == critical["token_type"]],
                 "nearby": [row for row in noncritical if row["trace_id"] == critical["trace_id"] and abs(int(row["pos"]) - int(critical["pos"])) <= 64],
                 "consequence": [row for row in consequences if row["trace_id"] == critical["trace_id"]],
-                "correct_trace": [row for row in noncritical if row["model"] == critical["model"] and traces[row["trace_id"]]["correct"] and row["token_type"] == critical["token_type"] and row["entropy_decile"] == critical["entropy_decile"]],
+                "correct_trace": [row for row in noncritical if row["model"] == critical["model"] and row["correct_trace"] and row["token_type"] == critical["token_type"] and row["entropy_decile"] == critical["entropy_decile"]],
                 "random": [row for row in noncritical if row["model"] == critical["model"]],
             }
             for group, candidates in groups.items():
-                candidates = [row for row in candidates if (row["trace_id"], int(row["pos"])) not in critical_keys]
                 rng = random.Random(f"{seed}:{critical['trace_id']}:{critical['pos']}:{kind}:{group}")
                 for negative in rng.sample(candidates, min(k, len(candidates))):
                     output.append({
@@ -125,6 +129,11 @@ def sample_negatives(positions: list[dict[str, Any]], traces: dict[str, dict[str
                         "neg_pos": int(negative["pos"]),
                     })
     return output
+
+
+def negatives_from_positions(positions_path: str | Path, k: int = 3, seed: int = 33) -> list[dict[str, Any]]:
+    """Standalone entry point: redraw negatives from a saved ``positions.parquet``."""
+    return sample_negatives(read_parquet(positions_path), k, seed)
 
 
 def run_label(config: dict[str, Any]) -> None:
@@ -159,7 +168,9 @@ def run_label(config: dict[str, Any]) -> None:
         row["correct_trace"] = bool(trace["correct"])
         row["model"] = trace["model"]
         row["zero_frac"] = float(config["zero_frac"])
-        row.setdefault("inclusion_probability", None)
+        row.setdefault("incl_prob", None)
+        row.setdefault("stratum", None)
+        row.setdefault("swap_done", False)
         positions.append(row)
     critical_by_trace: dict[str, list[int]] = defaultdict(list)
     for row in positions:
@@ -169,10 +180,15 @@ def run_label(config: dict[str, Any]) -> None:
         before_critical = not critical_by_trace[row["trace_id"]] or int(row["pos"]) < min(critical_by_trace[row["trace_id"]])
         finalize_position_labels(row, before_critical=before_critical, tau_null=float(config["tau_null"]))
     assign_entropy_deciles(positions)
-    negatives = sample_negatives(positions, traces, int(config["k_neg"]), int(config["seed"]))
+    negatives = sample_negatives(positions, int(config["k_neg"]), int(config["seed"]))
     dataset_out.mkdir(parents=True, exist_ok=True)
     write_parquet(dataset_out / "positions.parquet", positions)
-    write_jsonl(dataset_out / "traces.jsonl", traces_list)
+    from transformers import AutoTokenizer
+    from .datasets import load_problems
+    from .tracefields import ensure_trace_fields
+    tokenizer = AutoTokenizer.from_pretrained(config["model"], trust_remote_code=config["trust_remote_code"])
+    questions = {str(row["id"]): row["question"] for row in load_problems(config["dataset"], config.get("input_path"))}
+    write_jsonl(dataset_out / "traces.jsonl", [ensure_trace_fields(trace, tokenizer, questions) for trace in traces_list])
     if negatives:
         write_parquet(dataset_out / "negatives.parquet", negatives)
     else:

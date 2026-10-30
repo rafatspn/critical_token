@@ -1,0 +1,21 @@
+Metadata-Version: 2.4
+Name: ctlabel
+Version: 0.1.0
+Summary: Token-exact counterfactual rollout labels for critical reasoning tokens
+Requires-Python: >=3.10
+Requires-Dist: numpy>=1.26
+Requires-Dist: pyarrow>=15
+Requires-Dist: PyYAML>=5.4
+Requires-Dist: sympy>=1.12
+Requires-Dist: antlr4-python3-runtime<4.14,>=4.11
+Requires-Dist: tqdm>=4.66
+Requires-Dist: torch>=2.3
+Requires-Dist: transformers>=4.45
+Requires-Dist: vllm>=0.6
+Provides-Extra: test
+Requires-Dist: pytest>=8; extra == "test"
+Provides-Extra: features
+Requires-Dist: scikit-learn>=1.4; extra == "features"
+Requires-Dist: scipy>=1.11; extra == "features"
+Requires-Dist: pandas>=2.1; extra == "features"
+Requires-Dist: matplotlib>=3.8; extra == "features"

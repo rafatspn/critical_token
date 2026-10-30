@@ -21,9 +21,10 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest>=8"]
+features = ["scikit-learn>=1.4", "scipy>=1.11", "pandas>=2.1", "matplotlib>=3.8"]
 
 [tool.setuptools.packages.find]
-include = ["ctlabel*"]
+include = ["ctlabel*", "ctfeat*"]
 
 [tool.setuptools.package-data]
 ctlabel = ["vendor/LICENSE.txt", "vendor/input/*.jsonl"]

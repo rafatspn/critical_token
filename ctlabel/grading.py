@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import Any, Sequence
 
 from .config import dataset_base
@@ -18,9 +19,27 @@ def grade(pred_str: str, gold_answers: Sequence[Any], dataset: str) -> tuple[Any
     correct = False
     for gold in gold_answers:
         candidate = gold.lower() if isinstance(gold, str) and source != "MATH" else gold
-        if math_equal(pred, candidate):
+        if _math_equal(pred, candidate):
             correct = True
     if isinstance(pred, str):
         assert pred == pred.strip()
     return pred, correct
 
+
+
+def _math_equal(pred: Any, gold: Any) -> bool:
+    """``math_equal`` memoized on (pred, gold).
+
+    The sympy fallback forks a process per call for its timeout, which dominates
+    rollout grading; 64 rollouts per prefix repeat the same few answers, so the
+    cache returns the identical verdict without re-forking.
+    """
+    try:
+        return _math_equal_cached(pred, gold)
+    except TypeError:  # unhashable answer
+        return math_equal(pred, gold)
+
+
+@lru_cache(maxsize=1_000_000, typed=True)
+def _math_equal_cached(pred: Any, gold: Any) -> bool:
+    return math_equal(pred, gold)

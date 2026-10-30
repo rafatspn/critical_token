@@ -10,16 +10,19 @@ import yaml
 DEFAULTS: dict[str, Any] = {
     "dataset": "GSM8K_test", "model": "Qwen/Qwen2.5-7B", "out_dir": "outputs/run",
     "seed": 33, "n_samples_per_problem": 8, "n_problems": None,
+    "generate_chunk_problems": 500, "generate_until_target": True,
     "gen_temperature": 0.7, "replacement_temperature": 1.0, "rollout_temperature": 0.7,
     "top_p": 0.95, "max_tokens": 1024, "logprobs": 20,
     "min_correct": 1, "max_correct": 7, "wrong_per_problem": 2, "right_per_problem": 1,
     "n_wrong": 200, "n_right": 100, "mode": "search", "grid_stride": 32,
     "n_with_rollouts": 64, "n_sampled_alternatives": 64, "n_alt_rollouts": 16,
-    "n_strat": 16, "tau_crit": 0.3, "tau_null": 0.1, "zero_frac": 3 / 64,
+    "n_strat": 24, "n_values_only": 16, "tau_crit": 0.3, "tau_null": 0.1, "zero_frac": 3 / 64,
     "k_neg": 3, "tensor_parallel_size": 1, "gpu_memory_utilization": 0.9,
     "trust_remote_code": True,
     "request_batch_size": 4096,
     "hf_num_gpus": 1,
+    "attn_implementation": "sdpa", "save_hidden_states": None,
+    "vllm_logprobs_mode": "raw_logprobs", "engine_mismatch_tol": 0.05,
 }
 
 

@@ -11,7 +11,7 @@ grid_stride: 32
 n_with_rollouts: 64
 n_sampled_alternatives: 64
 n_alt_rollouts: 16
-n_strat: 16
+n_strat: 24
 gen_temperature: 0.7
 rollout_temperature: 0.7
 replacement_temperature: 1.0

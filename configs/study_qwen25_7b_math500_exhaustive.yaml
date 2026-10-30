@@ -1,0 +1,19 @@
+dataset: MATH_test
+model: Qwen/Qwen2.5-7B
+out_dir: outputs/study_qwen25_7b_math500_exhaustive
+n_samples_per_problem: 8
+n_wrong: 200
+n_right: 100
+wrong_per_problem: 2
+right_per_problem: 1
+mode: exhaustive
+grid_stride: 32
+n_with_rollouts: 64
+n_sampled_alternatives: 64
+n_alt_rollouts: 16
+n_strat: 24
+gen_temperature: 0.7
+rollout_temperature: 0.7
+replacement_temperature: 1.0
+
+tensor_parallel_size: 4

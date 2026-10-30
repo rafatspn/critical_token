@@ -40,6 +40,7 @@ def create_engine(config: dict[str, Any]) -> Any:
         trust_remote_code=bool(config["trust_remote_code"]),
         enable_prefix_caching=True,
         gpu_memory_utilization=float(config["gpu_memory_utilization"]),
+        logprobs_mode=config.get("vllm_logprobs_mode", "raw_logprobs"),
     )
 
 

@@ -12,8 +12,15 @@ def read_jsonl(path: str | Path) -> Iterator[dict[str, Any]]:
         return
     with path.open(encoding="utf-8") as handle:
         for line in handle:
-            if line.strip():
+            if not line.strip():
+                continue
+            try:
                 yield json.loads(line)
+            except json.JSONDecodeError:
+                # A job killed mid-append leaves an unterminated final line; skip it
+                # (its work is redone on resume). Corruption anywhere else is an error.
+                if line.endswith("\n"):
+                    raise
 
 
 def append_jsonl(path: str | Path, rows: Iterable[dict[str, Any]]) -> None:
@@ -58,7 +65,10 @@ def write_parquet(path: str | Path, rows: Iterable[dict[str, Any]]) -> None:
     if not materialized:
         raise ValueError(f"Refusing to write schema-less empty parquet file: {path}")
     tmp = path.with_suffix(path.suffix + ".tmp")
-    table = pa.Table.from_pylist(materialized)
+    # from_pylist takes its columns from the first row only; rows with different
+    # keys (e.g. values-only vs swap rows) would silently lose columns.
+    names = list(dict.fromkeys(key for row in materialized for key in row))
+    table = pa.Table.from_pylist([{name: row.get(name) for name in names} for row in materialized])
     for name in table.column_names:
         if name.endswith("token_ids") and pa.types.is_list(table[name].type):
             index = table.schema.get_field_index(name)

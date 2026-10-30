@@ -19,7 +19,9 @@ def estimate(config: dict[str, Any], stage: str) -> str:
     length = 1024 if config["mode"] == "exhaustive" else 25
     values = traces * length * int(config["n_with_rollouts"])
     tested = traces * (int(config["n_strat"]) + 3)
-    swap = tested * (int(config["n_sampled_alternatives"]) + 2 * int(config["n_alt_rollouts"]) + 2 * int(config["n_with_rollouts"]))
+    # Exhaustive runs already know every V_with; search runs need up to two per extra position.
+    value_positions = 0 if config["mode"] == "exhaustive" else tested + traces * int(config["n_values_only"])
+    swap = tested * (int(config["n_sampled_alternatives"]) + 2 * int(config["n_alt_rollouts"])) + 2 * value_positions * int(config["n_with_rollouts"])
     if stage == "values":
         return f"approximately {values:,} value-rollout completions"
     if stage == "swap":

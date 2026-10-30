@@ -13,7 +13,8 @@ def test_swap_reuses_canonical_with_values_without_duplicate_rollouts(tmp_path, 
     stats = []
     for position, token_id in enumerate(trace["response_ids"]):
         stats.append({
-            "trace_id": "t", "pos": position, "token_id": token_id, "entropy": float(position),
+            "trace_id": "t", "pos": position, "token_id": token_id, "entropy_T1": float(position),
+            "entropy_quintile": position, "type_group": "digit_operator",
             "top5_token_ids": [20, 21, token_id, 22, 23], "replacement_token_ids": [30, 31],
         })
     write_parquet(tmp_path / "token_stats.parquet", stats)
@@ -35,7 +36,7 @@ def test_swap_reuses_canonical_with_values_without_duplicate_rollouts(tmp_path, 
     monkeypatch.setattr("ctlabel.swap.create_engine", lambda config: object())
     monkeypatch.setattr("ctlabel.swap.run_rollouts", fake_rollouts)
     config = {
-        "out_dir": str(tmp_path), "n_strat": 1, "seed": 3, "n_with_rollouts": 4,
+        "out_dir": str(tmp_path), "n_strat": 1, "n_values_only": 1, "seed": 3, "n_with_rollouts": 4,
         "n_alt_rollouts": 2, "rollout_temperature": 0.7, "replacement_temperature": 1.0,
     }
     run_swap(config)

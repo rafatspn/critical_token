@@ -24,6 +24,7 @@
 #SBATCH --cpus-per-task=32
 #SBATCH --gpus-per-task=1
 #SBATCH --time=48:00:00
+#SBATCH --signal=B:USR1@300
 #SBATCH --job-name=ctlabel
 #SBATCH --output=%x-%j.out
 #SBATCH --error=%x-%j.err
@@ -41,7 +42,13 @@ set -euo pipefail
 export HF_HOME=${HF_HOME:-$SCRATCH/hf_cache}
 export TOKENIZERS_PARALLELISM=false
 export PYTHONUNBUFFERED=1
-mkdir -p "$HF_HOME" "$(dirname "$VENV")"
+# JIT/compile caches take file locks, and home on compute nodes does not support flock
+# (FlashInfer failed with "OSError: [Errno 524]"). Keep every cache on $SCRATCH (Lustre).
+# vLLM follows XDG_CACHE_HOME; FlashInfer and Triton need their own variables.
+export XDG_CACHE_HOME=$SCRATCH/cache
+export FLASHINFER_WORKSPACE_BASE=$SCRATCH/cache
+export TRITON_CACHE_DIR=$SCRATCH/cache/triton
+mkdir -p "$HF_HOME" "$(dirname "$VENV")" "$XDG_CACHE_HOME" "$TRITON_CACHE_DIR"
 
 # One-time environment setup; the lock stops concurrent jobs from installing at once.
 (
@@ -65,5 +72,33 @@ echo "job=$SLURM_JOB_ID node=$(hostname) config=$CONFIG stage=$STAGE"
 nvidia-smi --query-gpu=name,memory.total --format=csv
 python -c "import vllm, torch, transformers; print('vllm', vllm.__version__, 'torch', torch.__version__, 'transformers', transformers.__version__)"
 
-# --yes: batch jobs have no terminal for the cost-confirmation prompt.
-python -m ctlabel.run --config "$CONFIG" --stage "$STAGE" --yes
+# Inside a job array (submit_all.sh), tasks run one at a time and each resumes from disk:
+#  - near the wall-time limit Slurm sends USR1 (--signal above); this task stops the
+#    pipeline and exits 0 so the next array task continues the run;
+#  - when the run finishes, or fails with a real error, the array's pending tasks are
+#    cancelled so nothing reruns.
+cancel_pending_tasks() {
+    if [ -n "${SLURM_ARRAY_JOB_ID:-}" ]; then
+        scancel --state=PENDING "$SLURM_ARRAY_JOB_ID" || true
+    fi
+}
+on_time_limit() {
+    echo "Approaching the wall-time limit; stopping so the next array task can resume."
+    kill -TERM -- "-$pipeline" 2>/dev/null || true
+    wait "$pipeline" 2>/dev/null || true
+    exit 0
+}
+trap on_time_limit USR1
+
+# --yes: batch jobs have no terminal for the cost-confirmation prompt. setsid gives the
+# pipeline and its per-stage subprocesses their own process group, so they stop together.
+# Running it in the background lets the USR1 trap fire immediately instead of at exit.
+setsid python -m ctlabel.run --config "$CONFIG" --stage "$STAGE" --yes &
+pipeline=$!
+status=0
+wait "$pipeline" || status=$?
+cancel_pending_tasks
+if [ "$status" -ne 0 ]; then
+    echo "Pipeline failed with exit code $status; cancelled the remaining array tasks." >&2
+fi
+exit "$status"

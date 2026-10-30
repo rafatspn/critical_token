@@ -31,7 +31,7 @@ def write_report(config: dict[str, Any]) -> None:
     wrong = [trace for trace in traces if not trace["correct"]]
     critical = [row for row in positions if row["is_crit_cdpo"] or row["is_crit_drop"] or row["is_crit_good"]]
     noncritical = [row for row in positions if row["is_noncritical"]]
-    entropy = lambda rows: [float(row["entropy"]) for row in rows]
+    entropy = lambda rows: [float(row["entropy_T1"]) for row in rows]
     crit_entropies, null_entropies = entropy(critical), entropy(noncritical)
     bottom_share = sum(row["entropy_decile"] <= 3 for row in critical) / len(critical) if critical else float("nan")
     lags = [trace["crit_drop"] - trace["crit_cdpo"] for trace in wrong if trace.get("crit_drop") is not None and trace.get("crit_cdpo") is not None]
@@ -55,6 +55,21 @@ def write_report(config: dict[str, Any]) -> None:
         f"- Critical token types: {dict(Counter(row['token_type'] for row in critical))}",
         f"- Fixable at `crit_cdpo`: {share(lambda r: r['is_fixable'], [r for r in positions if r['is_crit_cdpo']]):.1%}",
         f"- Fixable at `crit_drop`: {share(lambda r: r['is_fixable'], [r for r in positions if r['is_crit_drop']]):.1%}",
+    ]
+    mismatch_rows = [row for row in positions if row.get("engine_mismatch") is not None]
+    lines += [
+        f"- `engine_mismatch` (vLLM vs HF): {share(lambda r: r['engine_mismatch'], mismatch_rows):.1%} of all positions; "
+        f"{share(lambda r: r['engine_mismatch'], [r for r in critical if r.get('engine_mismatch') is not None]):.1%} of critical positions",
+    ]
+    cells = Counter((row.get("entropy_quintile"), row.get("type_group")) for row in noncritical)
+    all_cells = sorted({(q, g) for q in range(5) for g in ("digit_operator", "connective", "latex_punct_other")})
+    thin = [f"q{q}:{g} ({cells[(q, g)]})" for q, g in all_cells if cells[(q, g)] < 30]
+    lines += [
+        "", "## Non-critical coverage (entropy quintile x token-type group)", "",
+        "| quintile | digit_operator | connective | latex_punct_other |", "|---|---|---|---|",
+        *[f"| q{q} | " + " | ".join(str(cells[(q, g)]) for g in ("digit_operator", "connective", "latex_punct_other")) + " |" for q in range(5)],
+        "",
+        f"- Cells below 30: {', '.join(thin) if thin else 'none'}",
         "", "## Compute by stage", "",
     ]
     for stage in ("generate", "select", "values", "swap", "label"):
@@ -73,6 +88,7 @@ def write_report(config: dict[str, Any]) -> None:
             f"- Compared positions: {select_diagnostics.get('n_compared', 0)}",
             f"- Argmax agreement: {select_diagnostics.get('argmax_agreement')}",
             f"- Exact top-5 set agreement (diagnostic): {select_diagnostics.get('top5_exact_set_agreement')}",
+            f"- `engine_mismatch` share: {select_diagnostics.get('engine_mismatch_share')} (vLLM sampled-token probability vs HF at T={select_diagnostics.get('engine_mismatch_compare_temperature')}, tolerance {config['engine_mismatch_tol']}, or top-2 order differs)",
         ]
     if config["mode"] == "exhaustive":
         sampled_at_cdpo = [row for row in positions if row["is_crit_cdpo"] and row.get("without_sampled_n_total")]
@@ -105,19 +121,16 @@ def write_report(config: dict[str, Any]) -> None:
         lines.append("- Not available in this run. Exhaustive runs automatically replay the search policy on the same observed values.")
     lines.append("")
     (dataset / "summary.md").write_text("\n".join(lines), encoding="utf-8")
-    revision = None
-    try:
-        from transformers import AutoConfig
-        revision = getattr(AutoConfig.from_pretrained(config["model"]), "_commit_hash", None)
-    except Exception:
-        pass
+    from .tracefields import model_revision
+    revision = model_revision(config["model"])
     tokens_by_stage: dict[str, int] = Counter()
     gpu_seconds_by_stage: dict[str, float] = Counter()
     for row in costs:
         tokens_by_stage[row.get("stage", "unknown")] += int(row.get("generated_tokens", 0))
         gpu_seconds_by_stage[row.get("stage", "unknown")] += float(row.get("gpu_seconds", 0))
     write_json(dataset / "meta.json", {
-        "config": config, "model_revision": revision,
+        "config": config, "model_revision": revision, "dtype": "bfloat16",
+        "attn_implementation": config["attn_implementation"], "vllm_logprobs_mode": config["vllm_logprobs_mode"],
         "versions": {name: _version(name) for name in ("vllm", "transformers", "torch", "pyarrow")},
         "seeds": {"global": config["seed"]},
         "generated_tokens_by_stage": dict(tokens_by_stage),

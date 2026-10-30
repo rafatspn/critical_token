@@ -1,0 +1,217 @@
+A entropy {'auroc': 0.87711, 'auprc': 0.01007, 'fa_per_1000_at_50recall': 118.98965}
+A negative_pmax {'auroc': 0.8955, 'auprc': 0.0126, 'fa_per_1000_at_50recall': 90.13999}
+A surprisal {'auroc': 0.94909, 'auprc': 0.02588, 'fa_per_1000_at_50recall': 35.82877}
+A negative_logit_gap {'auroc': 0.95742, 'auprc': 0.03332, 'fa_per_1000_at_50recall': 29.68148}
+A negative_dla_total {'auroc': 0.95767, 'auprc': 0.0337, 'fa_per_1000_at_50recall': 30.43214}
+A dla_conflict_frac {'auroc': 0.9588, 'auprc': 0.03921, 'fa_per_1000_at_50recall': 29.33658}
+A non_argmax {'auroc': 0.87911, 'auprc': 0.02494, 'fa_per_1000_at_50recall': 58.28769}
+A negative_phi_raw {'auroc': 0.58182, 'auprc': 0.00311, 'fa_per_1000_at_50recall': 408.72388}
+A negative_attention_response_post {'auroc': 0.81588, 'auprc': 0.00853, 'fa_per_1000_at_50recall': 156.2183}
+A T1_fixed {'auroc': 0.94366, 'auprc': 0.03117, 'fa_per_1000_at_50recall': 28.66707}
+A T1_gap {'auroc': 0.94148, 'auprc': 0.03085, 'fa_per_1000_at_50recall': 28.26131}
+A T1_gap_conflict {'auroc': 0.94211, 'auprc': 0.0317, 'fa_per_1000_at_50recall': 29.37716}
+A T1_gap_phi {'auroc': 0.93003, 'auprc': 0.03162, 'fa_per_1000_at_50recall': 29.70177}
+A T1_gap_attention_post {'auroc': 0.94199, 'auprc': 0.03124, 'fa_per_1000_at_50recall': 30.29012}
+C entropy {'auroc': 0.78653, 'auprc': 0.01377, 'fa_per_1000_at_50recall': 136.08}
+C negative_pmax {'auroc': 0.79334, 'auprc': 0.01408, 'fa_per_1000_at_50recall': 125.87654}
+C surprisal {'auroc': 0.80543, 'auprc': 0.01739, 'fa_per_1000_at_50recall': 115.73406}
+C negative_logit_gap {'auroc': 0.80544, 'auprc': 0.01856, 'fa_per_1000_at_50recall': 107.29893}
+C negative_dla_total {'auroc': 0.80592, 'auprc': 0.01865, 'fa_per_1000_at_50recall': 105.04279}
+C dla_conflict_frac {'auroc': 0.78678, 'auprc': 0.02101, 'fa_per_1000_at_50recall': 121.26263}
+C non_argmax {'auroc': 0.64561, 'auprc': 0.0109, 'fa_per_1000_at_50recall': 1000.0}
+C negative_phi_raw {'auroc': 0.60187, 'auprc': 0.00592, 'fa_per_1000_at_50recall': 382.10126}
+C negative_attention_response_post {'auroc': 0.67104, 'auprc': 0.00739, 'fa_per_1000_at_50recall': 240.6553}
+C T1_fixed {'auroc': 0.82027, 'auprc': 0.02197, 'fa_per_1000_at_50recall': 95.18486}
+C T1_gap {'auroc': 0.81879, 'auprc': 0.02357, 'fa_per_1000_at_50recall': 99.06705}
+C T1_gap_conflict {'auroc': 0.81759, 'auprc': 0.02416, 'fa_per_1000_at_50recall': 99.57519}
+C T1_gap_phi {'auroc': 0.81778, 'auprc': 0.02256, 'fa_per_1000_at_50recall': 89.92053}
+C T1_gap_attention_post {'auroc': 0.81799, 'auprc': 0.02343, 'fa_per_1000_at_50recall': 97.56296}
+S entropy {'auroc': 0.83429, 'auprc': 0.0261, 'fa_per_1000_at_50recall': 105.87614}
+S negative_pmax {'auroc': 0.84577, 'auprc': 0.02606, 'fa_per_1000_at_50recall': 88.27415}
+S surprisal {'auroc': 0.8757, 'auprc': 0.03933, 'fa_per_1000_at_50recall': 46.40338}
+S negative_logit_gap {'auroc': 0.87841, 'auprc': 0.04058, 'fa_per_1000_at_50recall': 44.75701}
+S negative_dla_total {'auroc': 0.878, 'auprc': 0.04094, 'fa_per_1000_at_50recall': 44.28952}
+S dla_conflict_frac {'auroc': 0.8761, 'auprc': 0.05051, 'fa_per_1000_at_50recall': 44.16756}
+S non_argmax {'auroc': 0.78116, 'auprc': 0.02749, 'fa_per_1000_at_50recall': 57.6841}
+S negative_phi_raw {'auroc': 0.55188, 'auprc': 0.00515, 'fa_per_1000_at_50recall': 440.78132}
+S negative_attention_response_post {'auroc': 0.76967, 'auprc': 0.02192, 'fa_per_1000_at_50recall': 161.48702}
+S T1_fixed {'auroc': 0.88855, 'auprc': 0.03999, 'fa_per_1000_at_50recall': 43.31389}
+S T1_gap {'auroc': 0.88854, 'auprc': 0.03907, 'fa_per_1000_at_50recall': 44.83831}
+S T1_gap_conflict {'auroc': 0.88678, 'auprc': 0.039, 'fa_per_1000_at_50recall': 43.67975}
+S T1_gap_phi {'auroc': 0.88493, 'auprc': 0.03912, 'fa_per_1000_at_50recall': 41.44393}
+S T1_gap_attention_post {'auroc': 0.88804, 'auprc': 0.03885, 'fa_per_1000_at_50recall': 44.33017}
+{
+  "n_rows": 71874,
+  "n_wrong": 49399,
+  "n_problems": 110,
+  "targets": {
+    "A": {
+      "positives": 109,
+      "problems": 73,
+      "traces": 96,
+      "low_entropy_positives": 1
+    },
+    "C": {
+      "positives": 200,
+      "problems": 109,
+      "traces": 200,
+      "low_entropy_positives": 26
+    },
+    "S": {
+      "positives": 200,
+      "problems": 109,
+      "traces": 200,
+      "low_entropy_positives": 17
+    }
+  },
+  "A_S_overlap": 96,
+  "A_C_overlap": 27,
+  "S_C_overlap": 34,
+  "gap_dla_spearman": 0.9998570347506619,
+  "gap_dla_abs_error_quantiles": [
+    0.03970623016357422,
+    0.09500098228454595,
+    0.15395039081573444,
+    51.8377571105957
+  ],
+  "conflict_identity_max_error": 1.7881393432617188e-07,
+  "non_argmax_shares": {
+    "A": {
+      "positive": 0.8165137614678899,
+      "negative": 0.058287685128829377
+    },
+    "C": {
+      "positive": 0.35,
+      "negative": 0.058781682554523464
+    },
+    "S": {
+      "positive": 0.62,
+      "negative": 0.057684099270310374
+    }
+  },
+  "cv": "5 problem-grouped folds, seed 0; fixed C=0.1; balanced classes; train-only imputation/scaling",
+  "bootstrap": "1000 paired problem resamples, seed 42; fixed OOF predictions, no model refitting",
+  "features": {
+    "T1_fixed": [
+      "ent__pre",
+      "varent__pre",
+      "pmax__pre",
+      "p_chosen__pre",
+      "logp_chosen__pre",
+      "rank_chosen__pre",
+      "margin12__pre",
+      "surprisal_gap__pre",
+      "ent_z__pre",
+      "pmax_z__pre",
+      "ent_ema_delta__pre",
+      "ent_prev_delta__pre",
+      "tt_digit__pre",
+      "tt_operator__pre",
+      "tt_latex_other__pre",
+      "tt_connective__pre",
+      "tt_punct__pre",
+      "tt_other__pre",
+      "r__pre",
+      "step_index__pre"
+    ],
+    "T1_gap": [
+      "ent__pre",
+      "varent__pre",
+      "pmax__pre",
+      "p_chosen__pre",
+      "logp_chosen__pre",
+      "rank_chosen__pre",
+      "margin12__pre",
+      "surprisal_gap__pre",
+      "ent_z__pre",
+      "pmax_z__pre",
+      "ent_ema_delta__pre",
+      "ent_prev_delta__pre",
+      "tt_digit__pre",
+      "tt_operator__pre",
+      "tt_latex_other__pre",
+      "tt_connective__pre",
+      "tt_punct__pre",
+      "tt_other__pre",
+      "r__pre",
+      "step_index__pre",
+      "negative_logit_gap"
+    ],
+    "T1_gap_conflict": [
+      "ent__pre",
+      "varent__pre",
+      "pmax__pre",
+      "p_chosen__pre",
+      "logp_chosen__pre",
+      "rank_chosen__pre",
+      "margin12__pre",
+      "surprisal_gap__pre",
+      "ent_z__pre",
+      "pmax_z__pre",
+      "ent_ema_delta__pre",
+      "ent_prev_delta__pre",
+      "tt_digit__pre",
+      "tt_operator__pre",
+      "tt_latex_other__pre",
+      "tt_connective__pre",
+      "tt_punct__pre",
+      "tt_other__pre",
+      "r__pre",
+      "step_index__pre",
+      "negative_logit_gap",
+      "dla_conflict_frac__pre"
+    ],
+    "T1_gap_phi": [
+      "ent__pre",
+      "varent__pre",
+      "pmax__pre",
+      "p_chosen__pre",
+      "logp_chosen__pre",
+      "rank_chosen__pre",
+      "margin12__pre",
+      "surprisal_gap__pre",
+      "ent_z__pre",
+      "pmax_z__pre",
+      "ent_ema_delta__pre",
+      "ent_prev_delta__pre",
+      "tt_digit__pre",
+      "tt_operator__pre",
+      "tt_latex_other__pre",
+      "tt_connective__pre",
+      "tt_punct__pre",
+      "tt_other__pre",
+      "r__pre",
+      "step_index__pre",
+      "negative_logit_gap",
+      "phi_tok_raw__pre",
+      "phi_tok_ref__pre",
+      "phi_tok_prompt__pre",
+      "phi_win_64__pre",
+      "phi_win_32__pre"
+    ],
+    "T1_gap_attention_post": [
+      "ent__pre",
+      "varent__pre",
+      "pmax__pre",
+      "p_chosen__pre",
+      "logp_chosen__pre",
+      "rank_chosen__pre",
+      "margin12__pre",
+      "surprisal_gap__pre",
+      "ent_z__pre",
+      "pmax_z__pre",
+      "ent_ema_delta__pre",
+      "ent_prev_delta__pre",
+      "tt_digit__pre",
+      "tt_operator__pre",
+      "tt_latex_other__pre",
+      "tt_connective__pre",
+      "tt_punct__pre",
+      "tt_other__pre",
+      "r__pre",
+      "step_index__pre",
+      "negative_logit_gap",
+      "att_resp_L25_H3__post"
+    ]
+  }
+}
