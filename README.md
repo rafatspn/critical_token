@@ -1,4 +1,4 @@
-# ctlabel
+# ctlabel 
 
 `ctlabel` builds a token-level critical-token dataset from token-exact counterfactual rollouts. It adapts the Apache-2.0 [Critical Tokens Matter](https://github.com/chenzhiling9954/Critical-Tokens-Matter) rollout method, fixes its decode/re-encode boundary bug, and adds right traces, adaptive search, CFT-style alternatives, confidence intervals, and matched negatives.
 
