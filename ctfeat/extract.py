@@ -240,6 +240,13 @@ def extract(dataset: Path, out: Path, *, n_traces: int | None, layers_spec: str,
               f"{consistency['max_rel_reconstruction_err']:.2e}; (unused) eager vs {pinned}: max |Δlogit| "
               f"{consistency['eager_max_abs_logit_diff']:.4f}", flush=True)
     _enforce(run, out, strict, head_checks_done=False)
+    from ctlabel.datasets import bundled_dataset_path
+    reference = meta["config"]["dataset"].removesuffix("_test")
+    run["settings"] = {"layers": layers_spec, "mu_ref_prompts": mu_prompts, "seed": seed,
+                       "check_consistency": check_consistency, "strict_checks": strict}
+    run["mu_ref"] = {"dataset": reference, "split": "train", "file": bundled_dataset_path(reference).name,
+                     "n_prompts": mu_prompts, "seed": seed, "tokens": "few-shot + question",
+                     "representation": "final RMSNorm (with weight) applied to h^l", "layers": None}
     mu_path = out / "mu_ref.pt"
     mu_layers = sorted(set(hidden_layers) | {n_layers})
     if mu_path.exists():
@@ -248,6 +255,7 @@ def extract(dataset: Path, out: Path, *, n_traces: int | None, layers_spec: str,
         with using(model, pinned):                  # no attention weights needed
             mu_ref = reference_means(model, tokenizer, head, mu_layers, meta["config"]["dataset"], mu_prompts, seed)
         torch.save({k: v.cpu() for k, v in mu_ref.items()}, mu_path)
+    run["mu_ref"]["layers"] = sorted(mu_ref)
     model.set_attn_implementation(WEIGHTS_IMPL)    # the model's sdpa computation, plus float32 weights for the hooks
     rng = np.random.default_rng(seed)
     manifest: dict[str, Any] = {}
@@ -366,6 +374,7 @@ def main() -> None:
     parser.add_argument("--traces", type=int, default=None, help="only the first N traces")
     parser.add_argument("--layers", default="every4", help="hidden-state / per-layer Φ layers: every4, all, or e.g. 4,28")
     parser.add_argument("--mu-ref-prompts", type=int, default=500)
+    parser.add_argument("--seed", type=int, default=0, help="seeds the mu_ref prompt sample and the head-check positions")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--skip-consistency", action="store_true")
     parser.add_argument("--no-strict-checks", action="store_true", help="record failed checks and continue")
@@ -373,7 +382,7 @@ def main() -> None:
     from .preflight import check_labels
     print(f"label preflight: {check_labels(args.dataset)}", flush=True)
     extract(args.dataset, args.out, n_traces=args.traces, layers_spec=args.layers, mu_prompts=args.mu_ref_prompts,
-            device=args.device, check_consistency=not args.skip_consistency, strict=not args.no_strict_checks)
+            device=args.device, seed=args.seed, check_consistency=not args.skip_consistency, strict=not args.no_strict_checks)
 
 
 if __name__ == "__main__":

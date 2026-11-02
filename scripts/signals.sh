@@ -8,8 +8,11 @@
 #   sbatch scripts/signals.sh phi         # optional: model-level Φ_W on FineWeb (logged only)
 #   sbatch scripts/signals.sh evaluate    # Section 4 (CPU-heavy: CV, bootstrap, plots)
 #   sbatch scripts/signals.sh all         # extract, cost, phi, evaluate
+#   sbatch scripts/signals.sh tests       # GPU tests 1 and 8 on the configured dataset
 #
-# Paths can be overridden: DATASET, FEATURES, RESULTS.
+# Settings and paths come from SIGNALS_CONFIG (default: the MATH run's configs/signals_qwen25_7b_math500.yaml):
+#   SIGNALS_CONFIG=configs/signals_qwen25_7b_gsm8k.yaml sbatch scripts/signals.sh all
+# Paths can still be overridden: DATASET, FEATURES, RESULTS.
 
 #SBATCH --account=dasrepo_g
 #SBATCH --constraint=gpu
@@ -35,23 +38,27 @@ export TOKENIZERS_PARALLELISM=false PYTHONUNBUFFERED=1
 source "$VENV/bin/activate"
 cd "$REPO"
 
-DATASET=${DATASET:-outputs/study_qwen25_7b_math500_exhaustive/dataset}
-FEATURES=${FEATURES:-outputs/signals/features}
-RESULTS=${RESULTS:-outputs/signals/results}
-echo "job=${SLURM_JOB_ID:-local} stage=$STAGE dataset=$DATASET features=$FEATURES results=$RESULTS"
+SIGNALS_CONFIG=${SIGNALS_CONFIG:-configs/signals_qwen25_7b_math500.yaml}
+eval "$(python -m ctfeat.runconfig "$SIGNALS_CONFIG")"
+DATASET=${DATASET:-$CFG_DATASET}
+FEATURES=${FEATURES:-$CFG_FEATURES}
+RESULTS=${RESULTS:-$CFG_RESULTS}
+export CTFEAT_DATASET=$DATASET          # the GPU tests read the dataset from here
+echo "job=${SLURM_JOB_ID:-local} stage=$STAGE config=$SIGNALS_CONFIG dataset=$DATASET features=$FEATURES results=$RESULTS"
 
 case "$STAGE" in
     smoke)    python -m pytest -q -m gpu tests/test_ctfeat_smoke.py ;;
     causality) python -m pytest -q -s -m gpu tests/test_ctfeat_causality_gpu.py ;;
-    extract)  python -m ctfeat.extract --dataset "$DATASET" --out "$FEATURES" --layers every4 ;;
-    cost)     python -m ctfeat.cost --dataset "$DATASET" --out "$RESULTS" ;;
-    phi)      python -m ctfeat.phi_replication --dataset "$DATASET" --out "$FEATURES" || true ;;
-    evaluate) python -m ctfeat.evaluate --dataset "$DATASET" --features "$FEATURES" --out "$RESULTS" --n-jobs "${SLURM_CPUS_PER_TASK:-8}" ;;
+    tests)    python -m pytest -q -s -m gpu tests/test_ctfeat_causality_gpu.py tests/test_ctfeat_smoke.py ;;
+    extract)  python -m ctfeat.extract --dataset "$DATASET" --out "$FEATURES" "${EXTRACT_ARGS[@]}" ;;
+    cost)     python -m ctfeat.cost --dataset "$DATASET" --out "$RESULTS" "${COST_ARGS[@]}" ;;
+    phi)      python -m ctfeat.phi_replication --dataset "$DATASET" --out "$FEATURES" "${PHI_ARGS[@]}" || true ;;
+    evaluate) python -m ctfeat.evaluate --dataset "$DATASET" --features "$FEATURES" --out "$RESULTS" "${EVAL_ARGS[@]}" ;;
     all)
-        python -m ctfeat.extract --dataset "$DATASET" --out "$FEATURES" --layers every4
-        python -m ctfeat.cost --dataset "$DATASET" --out "$RESULTS"
-        python -m ctfeat.phi_replication --dataset "$DATASET" --out "$FEATURES" || true
-        python -m ctfeat.evaluate --dataset "$DATASET" --features "$FEATURES" --out "$RESULTS" --n-jobs "${SLURM_CPUS_PER_TASK:-8}"
+        python -m ctfeat.extract --dataset "$DATASET" --out "$FEATURES" "${EXTRACT_ARGS[@]}"
+        python -m ctfeat.cost --dataset "$DATASET" --out "$RESULTS" "${COST_ARGS[@]}"
+        python -m ctfeat.phi_replication --dataset "$DATASET" --out "$FEATURES" "${PHI_ARGS[@]}" || true
+        python -m ctfeat.evaluate --dataset "$DATASET" --features "$FEATURES" --out "$RESULTS" "${EVAL_ARGS[@]}"
         ;;
     *) echo "unknown stage $STAGE" >&2; exit 2 ;;
 esac

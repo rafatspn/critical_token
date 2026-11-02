@@ -30,7 +30,10 @@ def estimate(config: dict[str, Any], stage: str) -> str:
 
 
 def _confirm(config: dict[str, Any], stage: str, yes: bool) -> None:
-    if yes or stage not in {"values", "swap", "all"}:
+    if stage not in {"values", "swap", "all"}:
+        return
+    print(f"compute estimate for {stage}: {estimate(config, stage)}", flush=True)
+    if yes:
         return
     message = f"This launch is estimated at {estimate(config, stage)}. Continue? [y/N] "
     if not sys.stdin.isatty() or input(message).strip().lower() not in {"y", "yes"}:
