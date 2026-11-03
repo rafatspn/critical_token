@@ -1,0 +1,4 @@
+{
+ "Qwen2.5-7B GSM8K": {"dataset": "outputs/dataset_gsm8k", "results": "outputs/results_gsm8k", "subsidiary": "analysis/results_gsm8k"},
+ "Llama-3.1-8B GSM8K": {"dataset": "outputs/dataset_llama31_gsm8k", "results": "outputs/results_llama31_gsm8k", "subsidiary": "analysis/results_llama31_gsm8k"}
+}

@@ -153,11 +153,12 @@ def subsidiary(run: dict[str, str]) -> dict[str, dict[str, float]] | None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--out", type=Path, default=REPO / "comparison_math_gsm8k.md")
-    parser.add_argument("--runs", type=Path, help="JSON overriding RUNS (for testing)")
+    parser.add_argument("--runs", type=Path, help="JSON overriding RUNS: {name: {dataset, results, subsidiary}}")
+    parser.add_argument("--title", default="MATH vs GSM8K: step 1, step 2 and the subsidiary analysis")
     args = parser.parse_args()
     runs = json.loads(args.runs.read_text()) if args.runs else RUNS
     names = list(runs)
-    lines = ["# MATH vs GSM8K: step 1, step 2 and the subsidiary analysis", "",
+    lines = [f"# {args.title}", "",
              "Results only. Sources: " + "; ".join(f"{name}: `{run['dataset']}`, `{run['results']}`, `{run['subsidiary']}`"
                                                    for name, run in runs.items()), ""]
 

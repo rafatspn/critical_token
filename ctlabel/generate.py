@@ -7,7 +7,7 @@ from typing import Any
 from .datasets import load_problems
 from .grading import grade
 from .io import append_jsonl, read_jsonl
-from .prompts import build_prompt, prompt_spans
+from .prompts import encode_prompt, prompt_spans
 from .randomness import request_seed
 from .select import select_traces
 from .sampling import _params, create_engine, labellable_token_count, tokens_prompt
@@ -74,7 +74,7 @@ def run_generate(config: dict[str, Any], *, engine: Any = None, tokenizer: Any =
         chunk = remaining[start:start + chunk_size]
         prompts, params, pending = [], [], []
         for problem in chunk:
-            prompt_ids = tokenizer.encode(build_prompt(config["dataset"], problem["question"]), add_special_tokens=False)
+            prompt_ids = encode_prompt(tokenizer, config["dataset"], problem["question"])
             for sample_index in range(n):
                 trace_id = f"{problem['id']}:{sample_index}"
                 if trace_id in existing:

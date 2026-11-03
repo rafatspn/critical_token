@@ -89,7 +89,7 @@ def reference_means(model: Any, tokenizer: Any, head: PredictionHead, layers: li
     try:
         for problem in problems:
             fewshot, question, _ = prompt_parts(dataset, problem["question"])
-            ids = tokenizer.encode(fewshot + question, add_special_tokens=False)
+            ids = tokenizer.encode(fewshot + question)        # with the tokenizer's special tokens (BOS), as step 1 prompts
             model.model(input_ids=torch.tensor([ids], device=head.weight.device))
             for layer in layers:
                 sums[layer] += head.normed(store[layer]).double().sum(0)

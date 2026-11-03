@@ -1,4 +1,4 @@
-"""Optional (test 7): replicate the paper's model-level Φ_W for Qwen2.5-7B base.
+"""Optional (test 7): replicate the paper's model-level Φ_W (reported for Qwen2.5-7B base).
 
     python -m ctfeat.phi_replication --dataset dataset/ --out features/ [--m 2000]
 
@@ -53,7 +53,7 @@ def main() -> None:
     head = PredictionHead.from_model(model)
     raw, normed = [], []
     for text in texts:
-        ids = tokenizer.encode(text, add_special_tokens=False)[: args.max_tokens]
+        ids = tokenizer.encode(text)[: args.max_tokens]          # with the tokenizer's special tokens (BOS)
         if not ids:
             continue
         hidden = model.model(input_ids=torch.tensor([ids], device="cuda")).last_hidden_state[0, -1]   # after the final norm

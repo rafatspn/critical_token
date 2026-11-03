@@ -81,31 +81,50 @@ def build_prompt(dataset: str, question: str) -> str:
     return "".join(prompt_parts(dataset, question))
 
 
+def encode_prompt(tokenizer: Any, dataset: str, question: str) -> list[int]:
+    """Prompt token IDs with the tokenizer's own special tokens, as vLLM adds them to a string
+    prompt (cDPO's setup): Llama 3 gets its BOS token; Qwen2.5 adds nothing."""
+    return tokenizer.encode(build_prompt(dataset, question))
+
+
+def _leading_special(tokenizer: Any, prompt_ids: list[int]) -> int:
+    """Number of special tokens (e.g. BOS) the tokenizer put before the prompt text."""
+    special = set(getattr(tokenizer, "all_special_ids", None) or [])
+    lead = 0
+    while lead < len(prompt_ids) and prompt_ids[lead] in special:
+        lead += 1
+    return lead
+
+
 def prompt_spans(tokenizer: Any, dataset: str, question: str, prompt_ids: list[int]) -> dict[str, Any]:
     """Token index ranges ``[start, end)`` of each prompt segment inside ``prompt_ids``.
 
-    Parts are tokenized separately; when their concatenation differs from
-    ``prompt_ids`` (a merge at a boundary), each boundary is located by
+    Leading special tokens (a BOS) belong to the few-shot span, so the spans still tile the
+    prompt from index 0. Parts are tokenized separately; when their concatenation differs
+    from the remaining ``prompt_ids`` (a merge at a boundary), each boundary is located by
     incremental decoding and a straddling token is assigned to the earlier part.
     """
+    lead = _leading_special(tokenizer, list(prompt_ids))
+    body = list(prompt_ids)[lead:]
     parts = prompt_parts(dataset, question)
     pieces = [tokenizer.encode(part, add_special_tokens=False) for part in parts]
-    merged = [token for piece in pieces for token in piece] != list(prompt_ids)
+    merged = [token for piece in pieces for token in piece] != body
     if not merged:
         ends = [sum(len(piece) for piece in pieces[: index + 1]) for index in range(len(pieces))]
     else:
         ends = []
         for index in range(len(parts) - 1):
             char_end = len("".join(parts[: index + 1]))
-            low, high = 0, len(prompt_ids)
+            low, high = 0, len(body)
             while low < high:  # first k whose decoded prefix reaches the boundary
                 middle = (low + high) // 2
-                if len(tokenizer.decode(prompt_ids[:middle], skip_special_tokens=False)) >= char_end:
+                if len(tokenizer.decode(body[:middle], skip_special_tokens=False)) >= char_end:
                     high = middle
                 else:
                     low = middle + 1
             ends.append(low)
-        ends.append(len(prompt_ids))
+        ends.append(len(body))
+    ends = [end + lead for end in ends]
     starts = [0, *ends[:-1]]
     names = ("fewshot_span", "question_span", "cue_span")
     spans: dict[str, Any] = {name: [start, end] for name, start, end in zip(names, starts, ends)}

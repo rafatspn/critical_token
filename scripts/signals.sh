@@ -49,7 +49,11 @@ echo "job=${SLURM_JOB_ID:-local} stage=$STAGE config=$SIGNALS_CONFIG dataset=$DA
 case "$STAGE" in
     smoke)    python -m pytest -q -m gpu tests/test_ctfeat_smoke.py ;;
     causality) python -m pytest -q -s -m gpu tests/test_ctfeat_causality_gpu.py ;;
-    tests)    python -m pytest -q -s -m gpu tests/test_ctfeat_causality_gpu.py tests/test_ctfeat_smoke.py ;;
+    tests)    # separate processes: a failed test's traceback would otherwise keep its float32 model on the GPU
+        status=0
+        python -m pytest -q -s -m gpu tests/test_ctfeat_causality_gpu.py || status=1
+        python -m pytest -q -s -m gpu tests/test_ctfeat_smoke.py || status=1
+        exit $status ;;
     extract)  python -m ctfeat.extract --dataset "$DATASET" --out "$FEATURES" "${EXTRACT_ARGS[@]}" ;;
     cost)     python -m ctfeat.cost --dataset "$DATASET" --out "$RESULTS" "${COST_ARGS[@]}" ;;
     phi)      python -m ctfeat.phi_replication --dataset "$DATASET" --out "$FEATURES" "${PHI_ARGS[@]}" || true ;;
